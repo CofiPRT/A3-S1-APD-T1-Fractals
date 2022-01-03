@@ -1,0 +1,126 @@
+----- ALGORITMI PARALELI SI DISTRIBUITI -----
+--- TEMA 1. Generare paralela de fractali ---
+
+╔═╗╔═╗╔╦╗
+╠═╣╠═╝ ║║
+╩ ╩╩  ═╩╝
+
+Cuprins:
+	1. Biblioteci...............................Linia  21
+	2. Modularizare.............................Linia  39
+		2.1. Header-ul "utils.h"................Linia  43
+		2.2. Sursa "skel.c".....................Linia  55
+		2.3. Sursa "tema1_par.c"................Linia  65
+	3. Alte detalii.............................Linia 114
+
+
+=== ============= ===
+=== 1. Biblioteci ===
+=== ============= ===
+
+Folosesc:
+	* stdio.h
+		Functii de baza IO, precum suita de functii de 'print'
+
+	* stdlib.h
+		Functii cu scop in alocarea dinamica, precum 'malloc', 'free'
+
+	* math.h
+		Functii matematice, precum 'sqrt', 'pow'
+
+	* pthread.h
+		Functii si tipuri pentru multithreading, 'pthread_t', 'pbarrier_t'
+
+
+=== =============== ===
+=== 2. Modularizare ===
+=== =============== ===
+
+--- ------------------------ ---
+--- 2.1. Header-ul "utils.h" ---
+--- ------------------------ ---
+
+--- Macro-ul DIE ---
+	Folosit pentru a incheia executia programului si a afisa un mesaj de
+	eroare.
+
+--- Functia 'complex_norm' ---
+	O simpla functie inline pentru calcularea modulului unui numar complex
+
+
+--- ------------------- ---
+--- 2.2. Sursa "skel.c" ---
+--- ------------------- ---
+	
+Fisierul prezinta functiile din scheletul oferit pentru tema, usor modificat:
+	- O noua variabila 'P', pentru numarul de thread-uri
+	- Actualizat cu coding style-ul propriu si error handling-ul cu
+	macro-ul DIE (Linia 46)
+
+
+--- ------------------------ ---
+--- 2.3. Sursa "tema1_par.c" ---
+--- ------------------------ ---
+
+Pentru iteratiile prin matrici, paralelizez intreaga matrice in parti
+aproximativ egale, incepand de la primul element (0, 0) pana
+la elementul (height, width).
+
+De exemplu, pentru o matrice:
+	1  2  3  4
+	5  6  7  8
+	9 10 11 12
+
+Si 2 thread-uri, thread-urile lucreaza pe numerele:
+	Thread 1 - [1, 2, 3, 4, 5, 6]
+	Thread 2 - [7, 8, 9, 10, 11, 12]
+
+--- Functiile 'run_julia' si 'run_mandelbrot' ---
+	Functiile au fost modificate pentru a calcula doar punctele aferente
+	thread-ului curent, definit de 'thread_id'. Functia aplicata asupra
+	punctul ramane neschimbata (pentru Julia/Mandelbrot)
+
+	In interiorul loop-ului, am optimizat scurt operatiile
+		int h = index / width;
+		int w = index % width;
+	Intrucat, in ceea ce priveste procesorul, avem ambele rezultate obtinute
+	dupa o singura operatie (ori "/" ori "%")
+
+--- Functia 'thread_func' ---
+	Functia principala apelata de fiecare thread.
+
+	Initializarile precum citirile din fisier si alocarea memoriei sunt
+	impartite in thread-uri, daca este posibil.
+
+	Se ruleaza algoritmul pentru generarea rezultatului pentru multimea Julia,
+	respectiv pentru Mandelbrot.
+
+	Se asteapta ca toate thread-urile sa isi incheie partea	de calcul a
+	rezultatului, dupa care se imparte, pe cat este posibil, responsabilitatea
+	scrierii in fisier, respectiv a eliberarii memoriei.
+
+--- Functia 'main' ---
+	Se citesc argumentele din linia de comanda
+	Se initializeaza bariera si se pornesc P-1 thread-uri pe
+	functia 'thread_func' (Linia 91), intrucat oferim si main-ului o parte
+	de calcul.
+	Se asteapta incheierea fiecarui thread deschis si se elibereaza bariera.
+
+
+=== =============== ===
+=== 3. Alte detalii ===
+=== =============== ===
+	Conform interventiilor de pe forum, am inteles ca imi este permis:
+		- Sa salvez rezultatele direct in coordonate ecran; nu mai este necesara
+		paralelizarea unei bucle la finalul lui 'run_julia'sau 'run_mandelbrot'
+
+		- Sa ofer o parte de calcul thread-ului main, de aceea el porneste
+		doar P - 1 thread-uri
+
+		- Sa citesc inainte de functiile 'run_julia' si 'run_mandelbrot' si sa
+		scriu dupa incheierea lor (pe fiecare thread)
+
+	Prefer ca in cazul unei eventuale depunctari sa se analizeze interventiile,
+	si sa mi se aduca la cunostinta daca in final tot s-a hotarat o depunctare
+	cu privire la un aspect de mai sus.
+
